@@ -1,0 +1,2 @@
+# spark_thriftserver_hive_metastore
+spark_thriftserver_hive_metastore
