@@ -1,0 +1,45 @@
+version: "3.1"
+
+services:
+  spk_mst:
+    image: mkenjis/ubspkcli_yarn_img
+    deploy:
+      placement:
+        constraints:
+          - node.labels.hostlabel == hdpmst
+    networks:
+      - mynet
+
+  mysql:
+    image: mysql:5.7
+    deploy:
+      placement:
+        constraints:
+          - node.labels.hostlabel == hdp1
+    networks:
+      - mynet
+    environment:
+      - MYSQL_ROOT_PASSWORD=admsys123
+      - MYSQL_DATABASE=metastore
+      - MYSQL_USER=hiveuser
+      - MYSQL_PASSWORD=hive123
+    volumes:
+      - .:/root/staging
+      - db:/var/lib/mysql
+
+  spk_cli:
+    image: mkenjis/ubspkcli_yarn_img
+    deploy:
+      placement:
+        constraints:
+          - node.labels.hostlabel == hdp2
+    networks:
+      - mynet
+
+networks:
+  mynet:
+    external:
+       name: mynet
+
+volumes:
+  db:

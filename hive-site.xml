@@ -1,0 +1,26 @@
+<configuration>
+   <property>
+     <name>hive.metastore.warehouse.dir</name>
+     <value>/user/hive/warehouse</value>
+   </property>
+   <property>
+      <name>javax.jdo.option.ConnectionURL</name>
+      <value>jdbc:mysql://mysql:3306/metastore?useSSL=false</value>
+      <description>metadata is stored in a mysql server</description>
+   </property>
+   <property>
+      <name>javax.jdo.option.ConnectionDriverName</name>
+      <value>com.mysql.jdbc.Driver</value>
+      <description>mysql jdbc driver class</description>
+   </property>
+   <property>
+      <name>javax.jdo.option.ConnectionUserName</name>
+      <value>hiveuser</value>
+      <description>user name for connecting to mysql server</description>
+   </property>
+   <property>
+      <name>javax.jdo.option.ConnectionPassword</name>
+      <value>hive123</value>
+      <description>password for connecting to mysql server</description>
+   </property>
+</configuration>
