@@ -55,6 +55,7 @@ xf8qop5183mj   spk_spk_cli   replicated   0/1        mkenjis/ubspkcli_yarn_img:l
 
 ## Set up MySQL server
 
+In mysql 5.7
 1. download hive binaries and unpack it
 ```shell
 wget https://archive.apache.org/dist/hive/hive-1.2.1/apache-hive-1.2.1-bin.tar.gz
@@ -65,6 +66,20 @@ tar -xzf apache-hive-1.2.1-bin.tar.gz
 ```shell
 /root/staging/apache-hive-1.2.1-bin/scripts/metastore/upgrade/mysql
 mysql -uroot -p metastore < hive-schema-1.2.0.mysql.sql
+Enter password:
+```
+
+In mysql 8.0
+1. download hive binaries and unpack it
+```shell
+https://archive.apache.org/dist/hive/hive-2.1.0/apache-hive-2.1.0-bin.tar.gz
+tar -xzf apache-hive-2.1.0-bin.tar.gz
+```
+
+2. access mysql server node and run hive script to create metastore tables
+```shell
+/root/staging/apache-hive-2.1.0-bin/scripts/metastore/upgrade/mysql
+mysql -uroot -p metastore < hive-schema-2.1.0.mysql.sql
 Enter password:
 ```
 
@@ -86,6 +101,9 @@ $ docker container exec -it <spk_cli ID> bash
 3. start spark-shell installing mysql jar files
 ```shell
 $ spark-shell --packages mysql:mysql-connector-java:5.1.49 --master yarn --num-executors 4
+OR
+$ spark-shell --packages mysql:mysql-connector-java:8.0.32 --master yarn --num-executors 4
+
 2021-12-05 11:09:14 WARN  NativeCodeLoader:62 - Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
