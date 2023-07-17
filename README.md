@@ -1,4 +1,4 @@
-# Spark client running into YARN cluster in Docker
+# Beeling client accessing Thrift Server in Docker
 
 Apache Spark is an open-source, distributed processing system used for big data workloads.
 
@@ -35,22 +35,14 @@ docker node update --label-add hostlabel=hdp3 node4
 docker network create --driver overlay mynet
 ```
 
-5. start the Hadoop cluster (with HDFS and YARN)
-```shell
-$ docker stack deploy -c docker-compose-hdp.yml hdp
-$ docker stack ps hdp
-jeti90luyqrb   hdp_hdp1.1     mkenjis/ubhdpclu_vol_img:latest   node2     Running         Preparing 39 seconds ago             
-tosjcz96hnj9   hdp_hdp2.1     mkenjis/ubhdpclu_vol_img:latest   node3     Running         Preparing 38 seconds ago             
-t2ooig7fbt9y   hdp_hdp3.1     mkenjis/ubhdpclu_vol_img:latest   node4     Running         Preparing 39 seconds ago             
-wym7psnwca4n   hdp_hdpmst.1   mkenjis/ubhdpclu_vol_img:latest   node1     Running         Preparing 39 seconds ago
-```
-
-4. start spark client and mysql server
+5. start spark master, client and mysql server
 ```shell
 $ docker stack deploy -c docker-compose.yml spk
 $ docker service ls
-ID             NAME          MODE         REPLICAS   IMAGE                                 PORTS
-xf8qop5183mj   spk_spk_cli   replicated   0/1        mkenjis/ubspkcli_yarn_img:latest
+ID             NAME          MODE         REPLICAS   IMAGE                              PORTS
+iedh5i4psnxj   spk_mysql     replicated   1/1        mysql:5.7                          
+ij64wq5yg7yq   spk_spk_cli   replicated   1/1        mkenjis/ubspkcli_yarn_img:latest   
+yoxz4c6818w2   spk_spk_mst   replicated   1/1        mkenjis/ubspkcli_yarn_img:latest
 ```
 
 ## Set up MySQL server
@@ -83,27 +75,22 @@ mysql -uroot -p metastore < hive-schema-2.1.0.mysql.sql
 Enter password:
 ```
 
-## Set up Spark client
+## Set up Spark master
 
-1. access spark client node
+1. access spark master node
 ```shell
-$ docker container ls   # run it in each node and check which <container ID> is running the Spark client constainer
-CONTAINER ID   IMAGE                                 COMMAND                  CREATED         STATUS         PORTS                                          NAMES
-8f0eeca49d0f   mkenjis/ubspkcli_yarn_img:latest   "/usr/bin/supervisord"   3 minutes ago   Up 3 minutes   4040/tcp, 7077/tcp, 8080-8082/tcp, 10000/tcp   yarn_spk_cli.1.npllgerwuixwnb9odb3z97tuh
-e9ceb97de97a   mkenjis/ubhdpclu_vol_img:latest           "/usr/bin/supervisord"   4 minutes ago   Up 4 minutes   9000/tcp                                       yarn_hdp1.1.58koqncyw79aaqhirapg502os
-
 $ docker container exec -it <spk_cli ID> bash
-
 ```
 
-2. copy hive-site.xml into $SPARK_HOME/conf
+2. copy following file into $SPARK_HOME/conf
+```shell
+$ cd $SPARK_HOME/conf
+$ # create hive-site.xml with settings provided
+```
 
 3. start spark-shell installing mysql jar files
 ```shell
-$ spark-shell --packages mysql:mysql-connector-java:5.1.49 --master yarn --num-executors 4
-OR
-$ spark-shell --packages mysql:mysql-connector-java:8.0.32 --master yarn --num-executors 4
-
+$ spark-shell --packages mysql:mysql-connector-java:5.1.49
 2021-12-05 11:09:14 WARN  NativeCodeLoader:62 - Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
@@ -125,4 +112,61 @@ Type :help for more information.
 scala> 
 ```
 
+4. create a persistent table in metastore
+```shell
+scala> val df = spark.read.option("inferSchema","true").csv("housing.data").toDF("CRIM","ZN","INDUS","CHAS","NOX","RM","AGE","DIS","RAD","TAX","PTRATIO","B","LSTAT","MEDV")
+scala> df.show
+scala> df.write.saveAsTable("housing")
+scala> 
+```
+
+5. exit the shell and start thriftserver
+```shell
+start-thriftserver.sh --packages mysql:mysql-connector-java:5.1.49
+```
+
+## Set up Spark client
+
+1. access spark client node
+```shell
+$ docker container exec -it <spk_cli ID> bash
+```
+
+2. copy following file into $SPARK_HOME/conf
+```shell
+$ cd $SPARK_HOME/conf
+$ # create hive-site.xml with settings provided
+```
+
+3. start beeline
+```shell
+$ beeline
+Beeline version 1.2.1.spark2 by Apache Hive
+
+beeline> !connect jdbc:hive2://97dbb9943552:10000
+Connecting to jdbc:hive2://97dbb9943552:10000
+Enter username for jdbc:hive2://97dbb9943552:10000: hive
+Enter password for jdbc:hive2://97dbb9943552:10000: 
+2023-07-17 15:34:45 INFO  Utils:310 - Supplied authorities: 97dbb9943552:10000
+2023-07-17 15:34:45 INFO  Utils:397 - Resolved authority: 97dbb9943552:10000
+2023-07-17 15:34:45 INFO  HiveConnection:203 - Will try to open client transport with JDBC Uri: jdbc:hive2://97dbb9943552:10000
+Connected to: Spark SQL (version 2.3.2)
+Driver: Hive JDBC (version 1.2.1.spark2)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+0: jdbc:hive2://97dbb9943552:10000> show tables;
++-----------+------------+--------------+--+
+| database  | tableName  | isTemporary  |
++-----------+------------+--------------+--+
+| default   | housing    | false        |
++-----------+------------+--------------+--+
+1 row selected (1.163 seconds)
+0: jdbc:hive2://97dbb9943552:10000> select count(*) from housing;
++-----------+--+
+| count(1)  |
++-----------+--+
+| 506       |
++-----------+--+
+1 row selected (4.179 seconds)
+0: jdbc:hive2://97dbb9943552:10000> !quit
+```
 
