@@ -64,7 +64,7 @@ Enter password:
 In mysql 8.0
 1. download hive binaries and unpack it
 ```shell
-https://archive.apache.org/dist/hive/hive-2.1.0/apache-hive-2.1.0-bin.tar.gz
+wget https://archive.apache.org/dist/hive/hive-2.1.0/apache-hive-2.1.0-bin.tar.gz
 tar -xzf apache-hive-2.1.0-bin.tar.gz
 ```
 
@@ -122,7 +122,7 @@ scala>
 
 5. exit the shell and start thriftserver
 ```shell
-start-thriftserver.sh --packages mysql:mysql-connector-java:5.1.49
+$ start-thriftserver.sh --packages mysql:mysql-connector-java:5.1.49
 ```
 
 ## Set up Spark client
@@ -132,13 +132,7 @@ start-thriftserver.sh --packages mysql:mysql-connector-java:5.1.49
 $ docker container exec -it <spk_cli ID> bash
 ```
 
-2. copy following file into $SPARK_HOME/conf
-```shell
-$ cd $SPARK_HOME/conf
-$ # create hive-site.xml with settings provided
-```
-
-3. start beeline
+2. start beeline and connect to thriftserver
 ```shell
 $ beeline
 Beeline version 1.2.1.spark2 by Apache Hive
